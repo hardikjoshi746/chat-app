@@ -12,7 +12,7 @@ async function protect(req) {
         }
       });
     } else {
-      reject("No token provided");
+      reject("no token");
     }
   });
 }

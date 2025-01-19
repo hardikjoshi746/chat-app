@@ -1,41 +1,40 @@
 const ws = require("ws");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
 const Message = require("./models/messageModel");
+const { clear } = require("console");
 const { User } = require("./models/userModel");
 
 const createWebSocketServer = (server) => {
   const wss = new ws.WebSocketServer({ server });
 
   wss.on("connection", (connection, req) => {
-    // Notify about online users
     const notifyAboutOnlinePeople = async () => {
       const onlineUsers = await Promise.all(
         Array.from(wss.clients).map(async (client) => {
           const { userId, username } = client;
-          if (!userId) return null;
-
-          const user = await User.findById(userId).catch(() => null);
+          const user = await User.findById(userId);
           const avatarLink = user ? user.avatarLink : null;
-          return { userId, username, avatarLink };
+
+          return {
+            userId,
+            username,
+            avatarLink,
+          };
         })
       );
 
-      // Filter out null values from onlineUsers
-      const filteredOnlineUsers = onlineUsers.filter((user) => user !== null);
-
       [...wss.clients].forEach((client) => {
-        if (client.readyState === ws.OPEN) {
-          client.send(
-            JSON.stringify({
-              online: filteredOnlineUsers,
-            })
-          );
-        }
+        client.send(
+          JSON.stringify({
+            online: onlineUsers,
+          })
+        );
       });
     };
 
-    // Handle connection health check
     connection.isAlive = true;
+
     connection.timer = setInterval(() => {
       connection.ping();
       connection.deathTimer = setTimeout(() => {
@@ -43,7 +42,7 @@ const createWebSocketServer = (server) => {
         clearInterval(connection.timer);
         connection.terminate();
         notifyAboutOnlinePeople();
-        console.log("Connection terminated due to inactivity.");
+        console.log("dead");
       }, 1000);
     }, 5000);
 
@@ -51,42 +50,37 @@ const createWebSocketServer = (server) => {
       clearTimeout(connection.deathTimer);
     });
 
-    // Extract and verify token
     const cookies = req.headers.cookie;
+
     if (cookies) {
       const tokenString = cookies
         .split(";")
-        .find((str) => str.trim().startsWith("authToken="));
+        .find((str) => str.startsWith("authToken="));
+
       if (tokenString) {
         const token = tokenString.split("=")[1];
         jwt.verify(token, process.env.JWTPRIVATEKEY, {}, (err, userData) => {
-          if (err) {
-            console.error("JWT verification error:", err);
-          } else {
-            const { _id, firstName, lastName } = userData;
-            connection.userId = _id;
-            connection.username = `${firstName} ${lastName}`;
-          }
+          if (err) console.log(err);
+
+          const { _id, firstName, lastName } = userData;
+          connection.userId = _id;
+          connection.username = `${firstName} ${lastName}`;
         });
       }
     }
 
-    // Handle incoming messages
     connection.on("message", async (message) => {
-      try {
-        const messageData = JSON.parse(message.toString());
-        const { recipient, text } = messageData;
+      const messageData = JSON.parse(message.toString());
+      const { recipient, text } = messageData;
+      const msgDoc = await Message.create({
+        sender: connection.userId,
+        recipient,
+        text,
+      });
 
-        if (!recipient || !text) return;
-
-        const msgDoc = await Message.create({
-          sender: connection.userId,
-          recipient,
-          text,
-        });
-
+      if (recipient && text) {
         [...wss.clients].forEach((client) => {
-          if (client.userId === recipient && client.readyState === ws.OPEN) {
+          if (client.userId === recipient) {
             client.send(
               JSON.stringify({
                 sender: connection.username,
@@ -96,13 +90,13 @@ const createWebSocketServer = (server) => {
             );
           }
         });
-      } catch (error) {
-        console.error("Error processing message:", error);
       }
     });
-
-    // Notify about online users when a new connection is established
     notifyAboutOnlinePeople();
+    // Sending online user list to all clients
+
+    // Log online users to the console
+    console.log("Online Users:", onlineUsers);
   });
 };
 

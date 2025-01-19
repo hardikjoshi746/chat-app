@@ -1,15 +1,14 @@
+//emailVerificationController.js
 const { User } = require("../models/userModel.js");
 const { Token } = require("../models/tokenModel.js");
-
 const verifyEmail = async (req, res) => {
   try {
-    // Find user by ID
     const user = await User.findById(req.params.id);
+
     if (!user) {
       return res.status(400).send({ message: "User doesn't exist" });
     }
 
-    // Check if the email is already verified
     if (user.verified) {
       return res.status(400).send({ message: "Email already verified" });
     }
@@ -19,23 +18,21 @@ const verifyEmail = async (req, res) => {
       userId: user._id,
       token: req.params.token,
     });
+
     if (!token) {
-      return res.status(400).send({ message: "Invalid verification link" });
+      return res.status(400).send({ message: "Invalid Link" });
     }
 
-    // Check if the token has expired
     if (token.expiresAt < Date.now()) {
-      user.verificationLinkSent = false; // Allow sending a new verification email
+      user.verificationLinkSent = false;
       await user.save();
       return res.status(400).send({ message: "Verification link has expired" });
     }
 
-    // Mark user as verified
     user.verified = true;
     await user.save();
 
-    // Send success response
-    res.status(200).send({ message: "Email verified successfully" });
+    res.status(200).send({ message: "Email Verified Successfully" });
   } catch (error) {
     console.error("Error in verifyEmail:", error);
     res.status(500).send({ message: "Internal Server Error" });
