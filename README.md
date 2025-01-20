@@ -102,9 +102,9 @@ The Chat App provides a platform for real-time communication with features such 
   npm start
 ```
 6. Access the Application: Open a browser and navigate to
-   ```bash
+```bash
    http://localhost:3000
-    ```
+```
    
 ##Contributions
 
