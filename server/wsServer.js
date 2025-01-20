@@ -1,18 +1,18 @@
 const ws = require("ws");
 const jwt = require("jsonwebtoken");
-const fs = require("fs");
 const Message = require("./models/messageModel");
-const { clear } = require("console");
 const { User } = require("./models/userModel");
 
 const createWebSocketServer = (server) => {
   const wss = new ws.WebSocketServer({ server });
 
+  // Use a Map to store online users globally
+  const onlineUsers = new Map();
+
   wss.on("connection", (connection, req) => {
     const notifyAboutOnlinePeople = async () => {
-      const onlineUsers = await Promise.all(
-        Array.from(wss.clients).map(async (client) => {
-          const { userId, username } = client;
+      const onlineUsersList = await Promise.all(
+        Array.from(onlineUsers.values()).map(async ({ userId, username }) => {
           const user = await User.findById(userId);
           const avatarLink = user ? user.avatarLink : null;
 
@@ -24,10 +24,11 @@ const createWebSocketServer = (server) => {
         })
       );
 
+      // Send the list of online users to all connected clients
       [...wss.clients].forEach((client) => {
         client.send(
           JSON.stringify({
-            online: onlineUsers,
+            online: onlineUsersList,
           })
         );
       });
@@ -41,8 +42,11 @@ const createWebSocketServer = (server) => {
         connection.isAlive = false;
         clearInterval(connection.timer);
         connection.terminate();
+
+        // Remove the user from onlineUsers and notify others
+        onlineUsers.delete(connection.userId);
         notifyAboutOnlinePeople();
-        console.log("dead");
+        console.log("Connection terminated due to inactivity.");
       }, 1000);
     }, 5000);
 
@@ -60,11 +64,22 @@ const createWebSocketServer = (server) => {
       if (tokenString) {
         const token = tokenString.split("=")[1];
         jwt.verify(token, process.env.JWTPRIVATEKEY, {}, (err, userData) => {
-          if (err) console.log(err);
+          if (err) {
+            console.log(err);
+          } else {
+            const { _id, firstName, lastName } = userData;
 
-          const { _id, firstName, lastName } = userData;
-          connection.userId = _id;
-          connection.username = `${firstName} ${lastName}`;
+            // Store user details in the onlineUsers map
+            connection.userId = _id;
+            connection.username = `${firstName} ${lastName}`;
+            onlineUsers.set(_id, {
+              userId: _id,
+              username: connection.username,
+            });
+
+            // Notify all clients about the updated online users
+            notifyAboutOnlinePeople();
+          }
         });
       }
     }
@@ -72,13 +87,15 @@ const createWebSocketServer = (server) => {
     connection.on("message", async (message) => {
       const messageData = JSON.parse(message.toString());
       const { recipient, text } = messageData;
-      const msgDoc = await Message.create({
-        sender: connection.userId,
-        recipient,
-        text,
-      });
 
       if (recipient && text) {
+        const msgDoc = await Message.create({
+          sender: connection.userId,
+          recipient,
+          text,
+        });
+
+        // Send the message to the recipient
         [...wss.clients].forEach((client) => {
           if (client.userId === recipient) {
             client.send(
@@ -92,11 +109,22 @@ const createWebSocketServer = (server) => {
         });
       }
     });
+
+    // Notify about online users when a new client connects
     notifyAboutOnlinePeople();
-    // Sending online user list to all clients
 
     // Log online users to the console
-    console.log("Online Users:", onlineUsers);
+    console.log(
+      "Online Users:",
+      Array.from(onlineUsers.values()).map((user) => user.username)
+    );
+
+    // Handle client disconnection
+    connection.on("close", () => {
+      onlineUsers.delete(connection.userId);
+      notifyAboutOnlinePeople();
+      console.log(`${connection.username} disconnected.`);
+    });
   });
 };
 
