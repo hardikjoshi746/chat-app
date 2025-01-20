@@ -11,15 +11,13 @@ A real-time chat application built using the MERN stack. The Chat App enables us
 - [Tech Stack](#tech-stack)
 - [Installation & Setup](#installation--setup)
 - [Usage](#usage)
-- [Screenshots](#screenshots)
 - [Contributions](#contributions)
-- [License](#license)
 
 ---
 
 ## Overview
 
-The Chat App provides a platform for real-time communication with features such as instant messaging, user authentication, and chat room creation. The app is designed for scalability, responsiveness, and reliability, making it suitable for both small and large groups.
+The Chat App provides a platform for real-time communication with features such as instant messaging, user authentication, and chat creation. The app is designed for scalability, responsiveness, and reliability, making it suitable for both small and large groups.
 
 ---
 
@@ -28,8 +26,6 @@ The Chat App provides a platform for real-time communication with features such 
 ### For Users:
 - **Real-Time Messaging:** Instant two-way communication powered by Socket.IO.
 - **User Authentication:** Secure user accounts with JWT-based authentication.
-- **Group Chats:** Create and participate in chat rooms.
-- **Typing Indicators:** See when another user is typing in real-time.
 - **Responsive Design:** Optimized for mobile and desktop users.
 
 ### General Features:
@@ -75,30 +71,33 @@ The Chat App provides a platform for real-time communication with features such 
 ### Steps:
 
 1. **Clone the Repository:**
-   ```bash
+```bash
    git clone https://github.com/hardikjoshi746/chat-app.git
    cd chat-app
+```
 2. Install Backend Dependencies:
-  ```bash
+```bash
   npm install
 ```
 
 3. Navigate to Frontend Directory and Install Dependencies:
-   ```bash
+```bash
    cd client
     npm install
+```
 4. Set Up Environment Variables: Create a .env file in the root directory and add the following:
-   ```
+```
      MONGO_URI=<Your MongoDB URI>
     JWT_SECRET=<Your JWT Secret>
     PORT=5000
+```
 5. Run the Application:
   Start the backend server:
-  ```bash
+```bash
   npm run server
-  ```
+```
   Start the frontend:
-  ```bash
+```bash
   npm start
 ```
 6. Access the Application: Open a browser and navigate to
