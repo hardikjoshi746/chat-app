@@ -53,24 +53,6 @@ npm start
 Access the Application Open your browser and navigate to http://localhost:3000.
 Project Structure
 
-chat-app/
-│
-├── client/               # React frontend
-│   ├── src/
-│   ├── public/
-│   └── package.json
-│
-├── server/               # Node.js backend
-│   ├── controllers/      # Business logic
-│   ├── models/           # MongoDB schemas
-│   ├── routes/           # API routes
-│   ├── utils/            # Utility functions
-│   └── server.js         # Entry point for the backend
-│
-├── .env                  # Environment variables
-├── package.json          # Backend dependencies
-└── README.md             # Project documentation
-
 Contributions
 
 Contributions are welcome! Feel free to fork the repository and submit a pull request with your enhancements or bug fixes.
