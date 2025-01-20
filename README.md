@@ -105,7 +105,8 @@ The Chat App provides a platform for real-time communication with features such 
    http://localhost:3000
 ```
    
-##Contributions
+
+## Contributions
 
 Contributions are welcome! Feel free to fork the repository and submit a pull request for improvements or new features.
 
